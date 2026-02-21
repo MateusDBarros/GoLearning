@@ -21,56 +21,59 @@ type RegularTruck struct {
 }
 
 func (t *RegularTruck) LoadCargo() error {
+	t.cargo += 1
 	return nil
 }
-func (t *RegularTruck) UnloadCarg() error {
+func (t *RegularTruck) UnloadCargo() error {
+	t.cargo = 0
 	return nil
 }
 
-type EletricTruck struct {
+type ElectricTruck struct {
 	id      string
 	cargo   int
 	battery float64
 }
 
-func processTruck(truck RegularTruck) error {
+func (e *ElectricTruck) LoadCargo() error {
+	e.cargo += 1
+	e.battery -= 1
+	return nil
+}
+func (e *ElectricTruck) UnloadCargo() error {
+	e.cargo = 0
+	e.battery -= 1
+	return nil
+}
+
+func processTruck(truck Truck) error {
+	fmt.Printf("processing truck %v\n", truck)
 
 	if err := truck.LoadCargo(); err != nil {
 		return fmt.Errorf("Error loading cargo: %s", err)
 	}
-	return ErrNotImplemented
+
+	err := truck.UnloadCargo()
+	if err != nil {
+		return fmt.Errorf("Error unloading cargo: %s", err)
+	}
+
+	return nil
 }
 
 func main() {
-	trucks := []RegularTruck{
-		{id: "Truck-1"},
-		{id: "Truck-2"},
-		{id: "Truck-3"},
+
+	rt := &RegularTruck{id: "truck1", cargo: 0}
+	et := &ElectricTruck{id: "etruck2", cargo: 0}
+
+	err := processTruck(rt)
+	if err != nil {
+		log.Fatalf("Error processing truck %d: %s\n", err)
 	}
-	/*
-		eTrucks := []EletricTruck{
-			{id: "Eletric-truck-1"},
-		}*/
 
-	for i, truck := range trucks {
-		fmt.Printf("Truck %s has arrived.\n", truck.id)
-
-		/*
-			if err := processTruck(trucks[i]); err != nil {
-				if errors.Is(err, ErrNotImplemented) {
-					continue
-				}
-
-				log.Fatalf("Error processing truck %d: %s\n", i, err)
-			}
-
-		*/
-		err := processTruck(truck)
-		if err != nil {
-			log.Fatalf("Error processing truck %d: %s\n", i, err)
-		}
-
-		fmt.Printf("Truck %s has departured.\n", truck.id)
-
+	err = processTruck(et)
+	if err != nil {
+		log.Fatalf("Error processing truck %d: %s\n", err)
 	}
+
 }
