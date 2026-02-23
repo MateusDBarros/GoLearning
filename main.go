@@ -3,6 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
+	"sync"
+	"time"
 )
 
 var (
@@ -48,6 +51,8 @@ func (e *ElectricTruck) UnloadCargo() error {
 func processTruck(truck Truck) error {
 	fmt.Printf("processing truck %v\n", truck)
 
+	time.Sleep(time.Second)
+
 	if err := truck.LoadCargo(); err != nil {
 		return fmt.Errorf("Error loading cargo: %s", err)
 	}
@@ -61,7 +66,21 @@ func processTruck(truck Truck) error {
 }
 
 func processFleet(trucks []Truck) error {
-	return fmt.Errorf("Fleet not implemented yet")
+	var wg sync.WaitGroup
+	// wg.Add(len(trucks))
+	for _, t := range trucks {
+		wg.Add(1)
+
+		go func(t Truck) {
+			if err := processTruck(t); err != nil {
+				log.Println(err)
+			}
+
+			wg.Done()
+		}(t)
+	}
+	wg.Wait()
+	return nil
 }
 
 func main() {
