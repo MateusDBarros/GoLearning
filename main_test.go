@@ -9,7 +9,7 @@ func TestTruck(t *testing.T) {
 	t.Run("processTruck", func(t *testing.T) {
 		t.Run("should load and unload a truck cargo", func(t *testing.T) {
 
-			rt := &RegularTruck{id: "truck1", cargo: 0}
+			rt := &NormalTruck{id: "truck1", cargo: 0}
 			et := &ElectricTruck{id: "etruck2", cargo: 0}
 
 			err := processTruck(rt)

@@ -14,16 +14,16 @@ type Truck interface {
 	LoadCargo() error
 	UnloadCargo() error
 }
-type RegularTruck struct {
+type NormalTruck struct {
 	id    string
 	cargo int
 }
 
-func (t *RegularTruck) LoadCargo() error {
+func (t *NormalTruck) LoadCargo() error {
 	t.cargo += 1
 	return nil
 }
-func (t *RegularTruck) UnloadCargo() error {
+func (t *NormalTruck) UnloadCargo() error {
 	t.cargo = 0
 	return nil
 }
@@ -58,4 +58,25 @@ func processTruck(truck Truck) error {
 	}
 
 	return nil
+}
+
+func processFleet(trucks []Truck) error {
+	return fmt.Errorf("Fleet not implemented yet")
+}
+
+func main() {
+
+	fleet := []Truck{
+		&NormalTruck{id: "NT1", cargo: 0},
+		&ElectricTruck{id: "ET1", cargo: 0, battery: 100},
+		&NormalTruck{id: "NT2", cargo: 0},
+		&ElectricTruck{id: "ET2", cargo: 0, battery: 100},
+	}
+
+	if err := processFleet(fleet); err != nil {
+		fmt.Printf("Error processing fleet %v\n", err)
+		return
+	}
+
+	fmt.Printf("Fleet processed successfully\n")
 }
