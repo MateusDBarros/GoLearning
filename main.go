@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -8,12 +9,16 @@ import (
 	"time"
 )
 
+type contextKey string
+
+var UserIDKey contextKey = "UserID"
+
 var (
 	ErrNotImplemented = errors.New("not implemented")
-	ErrTruckNotFound  = errors.New("truck not found")
+	// ErrTruckNotFound  = errors.New("truck not found")
 )
 
-type Truck interface {
+type Trucks interface {
 	LoadCargo() error
 	UnloadCargo() error
 }
@@ -48,10 +53,19 @@ func (e *ElectricTruck) UnloadCargo() error {
 	return nil
 }
 
-func processTruck(truck Truck) error {
+func processTruck(ctx context.Context, truck Trucks) error {
 	fmt.Printf("processing truck %v\n", truck)
 
-	time.Sleep(time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*2)
+	defer cancel()
+
+	delay := time.Second * 1
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(delay):
+		break
+	}
 
 	if err := truck.LoadCargo(); err != nil {
 		return fmt.Errorf("Error loading cargo: %s", err)
@@ -65,34 +79,49 @@ func processTruck(truck Truck) error {
 	return nil
 }
 
-func processFleet(trucks []Truck) error {
+func processFleet(ctx context.Context, trucks []Trucks) error {
 	var wg sync.WaitGroup
 	// wg.Add(len(trucks))
+	errorsChan := make(chan error, len(trucks))
+
 	for _, t := range trucks {
 		wg.Add(1)
 
-		go func(t Truck) {
-			if err := processTruck(t); err != nil {
-				log.Println(err)
+		go func(t Trucks) {
+			if err := processTruck(ctx, t); err != nil {
+				errorsChan <- err
 			}
 
 			wg.Done()
 		}(t)
 	}
 	wg.Wait()
+	close(errorsChan)
+
+	var errs []error
+	for err := range errorsChan {
+		log.Printf("Error processing truck %v\n", err)
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("fleet processing had %d errors", len(errs))
+	}
 	return nil
+
 }
 
 func main() {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, UserIDKey, "412")
 
-	fleet := []Truck{
+	fleet := []Trucks{
 		&NormalTruck{id: "NT1", cargo: 0},
 		&ElectricTruck{id: "ET1", cargo: 0, battery: 100},
 		&NormalTruck{id: "NT2", cargo: 0},
 		&ElectricTruck{id: "ET2", cargo: 0, battery: 100},
 	}
 
-	if err := processFleet(fleet); err != nil {
+	if err := processFleet(ctx, fleet); err != nil {
 		fmt.Printf("Error processing fleet %v\n", err)
 		return
 	}
